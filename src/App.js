@@ -1,57 +1,69 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
+import React, { useEffect, useState } from 'react';
+import {useDispatch} from 'react-redux'
+import { ThemeProvider } from 'styled-components'
 import './App.css';
+import {colors} from "./Style/colors"
+import storage from 'local-storage-fallback'
+import { BrowserRouter as Router, Switch,Route } from 'react-router-dom'
+import Home from './ComponentPage/Home';
+import GlobalStyle from "./Style/global"
+import light from "./Style/themes/light"
+import dark from './Style/themes/dark';
+import usePersistenceState from './utils/usePesistenceState';
+import axios from "./utils/axios"
+import requests from "./utils/requests"
+import { ADD_FILMS } from './features/filmsSlice';
+import Nav from './Component/Nav';
+import InfoFilm from "./ComponentPage/InfoFilm"
 
 function App() {
+  const dispatch = useDispatch()
+
+  const [theme, setTheme] = usePersistenceState('theme',dark);
+  
+  const toggleTheme = () => {
+    setTheme(theme.title === 'dark' ? light : dark) 
+  }
+
+  useEffect(() => {
+    async function fetchData(fetchUrl){
+      const request = await axios.get(fetchUrl);
+      dispatch(ADD_FILMS({
+        film:request.data.results,
+      }))
+
+      return request;
+    }
+    
+    fetchData(requests.fetchNetflixOriginals);
+    fetchData(requests.fetchActionMovies);
+    fetchData(requests.fetchTopRated);
+    fetchData(requests.fetchTrending);
+    fetchData(requests.fetchComedyMovies);
+    fetchData(requests.fetchHorrorMovies);
+    fetchData(requests.fetchRomanceMovies);
+  }, [])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
+    <ThemeProvider theme={theme}>
+      <>
+      <GlobalStyle />
+      <div className="app">
+        <Router>
+          <Switch>
+          <Route path="/infoFilm">
+              <Nav theme={theme} toggleTheme={toggleTheme}></Nav>
+              <InfoFilm></InfoFilm>
+            </Route>
+            <Route path="/">
+              <Nav theme={theme} toggleTheme={toggleTheme}></Nav>
+              <Home></Home>
+            </Route>
+          </Switch>
+        </Router>
+      </div>
+      </>
+    </ThemeProvider>
   );
 }
 
